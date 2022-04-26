@@ -8,7 +8,6 @@ import sys
 import tarfile
 import tempfile
 import zipfile
-from collections import Counter
 from contextlib import contextmanager
 
 import numpy as np
@@ -28,7 +27,7 @@ class ImageNetWithLogits(ImageNet):
         self,
         root,
         logits_file: str = None,
-        data_fraction = 1.0,
+        data_fraction=1.0,
         split: str = "train",
         num_imgs_per_class_val_split: int = 0,
         meta_dir=None,
@@ -75,16 +74,18 @@ class ImageNetWithLogits(ImageNet):
 
         # partition train set into [train, val]
         if split == "train":
-            train, val = self.partition_train_set(self.imgs, num_imgs_per_class_val_split)
+            train, val = self.partition_train_set(
+                self.imgs, num_imgs_per_class_val_split
+            )
             if original_split == "train":
                 self.imgs = train
             if original_split == "val":
                 self.imgs = val
 
         if data_fraction < 1.0:
-            print(f'Limiting to {data_fraction} of the data.')
-            self.imgs = self.imgs[:int(data_fraction * len(self.imgs))]
-            print(f'Using {len(self.imgs)} images.')
+            print(f"Limiting to {data_fraction} of the data.")
+            self.imgs = self.imgs[: int(data_fraction * len(self.imgs))]
+            print(f"Using {len(self.imgs)} images.")
 
         # shuffle again for final exit
         np.random.seed(1234)
@@ -96,7 +97,9 @@ class ImageNetWithLogits(ImageNet):
         self.wnids = self.classes
         self.wnid_to_idx = {wnid: idx for idx, wnid in zip(idcs, self.wnids)}
         self.classes = [wnid_to_classes[wnid] for wnid in self.wnids]
-        self.class_to_idx = {cls: idx for clss, idx in zip(self.classes, idcs) for cls in clss}
+        self.class_to_idx = {
+            cls: idx for clss, idx in zip(self.classes, idcs) for cls in clss
+        }
 
         # update the root data
         self.samples = self.imgs
@@ -179,7 +182,11 @@ def parse_devkit_archive(root, file=None):
         metafile = os.path.join(devkit_root, "data", "meta.mat")
         meta = sio.loadmat(metafile, squeeze_me=True)["synsets"]
         nums_children = list(zip(*meta))[4]
-        meta = [meta[idx] for idx, num_children in enumerate(nums_children) if num_children == 0]
+        meta = [
+            meta[idx]
+            for idx, num_children in enumerate(nums_children)
+            if num_children == 0
+        ]
         idcs, wnids, classes = list(zip(*meta))[:3]
         classes = [tuple(clss.split(", ")) for clss in classes]
         idx_to_wnid = {idx: wnid for idx, wnid in zip(idcs, wnids)}
@@ -187,7 +194,9 @@ def parse_devkit_archive(root, file=None):
         return idx_to_wnid, wnid_to_classes
 
     def parse_val_groundtruth_txt(devkit_root):
-        file = os.path.join(devkit_root, "data", "ILSVRC2012_validation_ground_truth.txt")
+        file = os.path.join(
+            devkit_root, "data", "ILSVRC2012_validation_ground_truth.txt"
+        )
         with open(file) as txtfh:
             val_idcs = txtfh.readlines()
         return [int(val_idx) for val_idx in val_idcs]
@@ -237,7 +246,9 @@ def extract_archive(from_path, to_path=None, remove_finished=False):
         with tarfile.open(from_path, "r:xz") as tar:
             tar.extractall(path=to_path)
     elif _is_gzip(from_path):
-        to_path = os.path.join(to_path, os.path.splitext(os.path.basename(from_path))[0])
+        to_path = os.path.join(
+            to_path, os.path.splitext(os.path.basename(from_path))[0]
+        )
         with open(to_path, "wb") as out_f, gzip.GzipFile(from_path) as zip_f:
             out_f.write(zip_f.read())
     elif _is_zip(from_path):
